@@ -258,3 +258,9 @@ li{
   align-self: flex-end;
 
 }
+.message_box{
+  position: absolute;
+  margin: 0 auto;
+  bottom: 10vh;
+
+}

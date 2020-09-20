@@ -114,13 +114,22 @@ def index():
         username = form.username.data
         password = form.password.data
         password2 = form.password2.data
-        if username and (password == password2):
+        if (25 > len(username) > 4) and (password == password2):
             hash_pass = generate_password_hash(password)
             new_user = User(groups_id=session.query(User_group).filter_by(title='All').first().id, username=username, password=hash_pass)
             session.add(new_user)
             session.commit()
             login_user(new_user)
             return redirect(url_for('home'))
+        elif( password != password2 ):
+            message = 'Password mismatch'
+            return render_template('index.html', form=form, message=message)
+        elif(24 < len(username) < 5):
+            message = 'Invalid login'
+            return render_template('index.html', form=form, message=message)
+        else:
+            message = ''
+            return render_template('index.html', form=form, message=message)
     return render_template('index.html', form=form)
 
 
@@ -135,7 +144,8 @@ def login():
             login_user(user)
             return redirect(url_for('home'))
         else:
-            return render_template('login_page.html', form=form)
+            message = 'Incorrect login or password'
+            return render_template('login_page.html', form=form, message=message)
     return render_template('login_page.html', form=form)
 
 
