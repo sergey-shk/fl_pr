@@ -161,20 +161,17 @@ def poll_detail(id):
         return render_template('poll.html', poll=poll)
     else:
         poll = session.query(Poll).filter_by(id=id).first()
-        ###!!!!
         poll.voted.append(current_user.id)
         session.commit()
         for point in poll.points:
             for vote in point.votes:
                 if vote.title == request.form[point.title]:
                     vote.vote_count += 1
-                #array for answer
         session.commit()
         return redirect(url_for('poll_result', id=id))
 
 @app.route('/delete/<int:id>',methods=['GET'])
 def delete_poll(id):
-     #poll_id = int(request.args.get('id'))
      poll_id = id
      poll_to_delete = session.query(Poll).filter_by(id=poll_id).first()
      if (current_user.id == poll_to_delete.author_id) and (poll_to_delete!= None):
@@ -195,7 +192,6 @@ def poll_result(id):
             for vote in point.votes:
                 vote_ctr += vote.vote_count
             vote_dict.update( {point.id: vote_ctr} )
-            #counter to point_models
         return render_template('results.html', votes_dict=vote_dict, poll=poll)
     else:
         return 'error'
@@ -226,7 +222,6 @@ def new_poll():
                 return render_template('new_poll.html', form=form)
 
         if form.validate_on_submit:
-            #polls
             poll_title = form.title.data
             author_id = current_user.id
             new_poll = Poll(title=poll_title, author_id=author_id)
