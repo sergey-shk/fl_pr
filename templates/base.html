@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+  <head>
+    <link rel="stylesheet" href="{{ url_for('static', filename='main.css') }}">
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300&display=swap" rel="stylesheet">
+    <meta charset="utf-8">
+    <title></title>
+  </head>
+  <body>
+    <header>
+      <div class="logo_h">
+        <a class='logo' href="/home">Appname</a>
+      </div>
+      <div class="user_bar">
+        {% if current_user.is_authenticated %}
+          <span class="ttl">{{ current_user.username }}</span>
+          <a class="lo_a" href="/logout"> <span class="lo_a">Logout</span></a>
+        {% endif %}
+      </div>
+    </header>
+    <div class="content">
+      {% block content %}
+      {% endblock %}
+    </div>
+  </body>
+</html>

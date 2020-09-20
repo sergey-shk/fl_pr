@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% block content %}
+  <div class="container">
+    <div class="poll_view">
+      <div class="np_title">
+        <div class="title">
+          <span class="ttl">{{ poll.title }}</span>
+        </div>
+          <input class="inputfield_s" type="text" name="" placeholder="About" value="">
+      </div>
+      <div class="np_list">
+        <form class="wt100" action="{{ url_for('poll_detail', id=poll.id) }}" method="POST">
+          {% for point in poll.points %}
+            <div class="np_points">
+              <div class="title">
+                <span class="point_title">{{ point.title }}</span>
+              </div>
+              <ul>
+                {% for vote in point.votes %}
+                  <input class='irad' type="radio" name="{{ point.title }}" value="{{ vote.title }}"><span class="fs18">{{ vote.title }}</span><br>
+                {% endfor %}
+                {% for answer in point.answers %}
+                  <span class="fs18">{{ answer.title }}. </span>
+                  <input class="inputfield no_outln" placeholder="answer" type="text" name="" value=""><br>
+                {% endfor %}
+              </ul>
+            </div>
+          {% endfor %}
+          <div class="box_b">
+            <button type="submit" name="button">Send</button>
+            <a class="" href="{{ url_for('poll_result',id=poll.id) }}">Results</a>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+{% endblock %}

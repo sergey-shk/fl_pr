@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+{% block content %}
+  <div class="container">
+    <div class="poll_view">
+      <div class="np_title">
+        <div class="title">
+          <span class="ttl">{{ poll.title }}</span>
+        </div>
+      </div>
+      <div class="np_list">
+        {% for point in poll.points %}
+        <div class="np_points">
+          <div class="title">
+            <span class='point_title'>{{ point.title }}</span>
+          </div>
+          <ul>
+            {% for vote in point.votes %}
+              {% if votes_dict[point.id] !=0  %}
+                <li><span>{{ vote.title }}</span>{{ votes_dict[point_id] }}<span> ({{ '{:.2f}'.format(vote.vote_count/votes_dict[point.id]*100) }}%)</span></li>
+              {% else %}
+                <li><span>{{ vote.title }}</span><span> ( 0% )</span></li>
+              {% endif %}
+            {% endfor %}
+            {% for answer in point.answers %}
+              <span>{{answer.title}} </span>
+              {% if answer.answer %}
+                {% for value in answer.answer %}
+                  <li><span>{{ value }}</span></li>
+                {% endfor %}
+              {% endif %}
+            {% endfor %}
+          </ul>
+        </div>
+        {% endfor %}
+      </div>
+      <a href="/home">Back</a>
+    </div>
+  </div>
+{% endblock %}

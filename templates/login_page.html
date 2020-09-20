@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+{% block content %}
+    <div class="container">
+      <div class="rl_box">
+        <form class="rl_form" action="{{ url_for('login') }}" method="POST">
+          {{ form.csrf_token }}
+          {{ form.username(class_='inputfield', placeholder="Login") }}
+          {{ form.password(class_='inputfield', placeholder="Password") }}
+          <button type="submit" name="button">Login</button>
+          <a href="/">Sign up</a>
+        </form>
+      </div>
+    </div>
+  </body>
+{% endblock %}

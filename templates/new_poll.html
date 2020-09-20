@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+{% block content %}
+    <div class="container">
+      <div class="new_poll_form">
+        <form class="" action="{{ url_for('new_poll') }}" method="POST">
+          {{ form.csrf_token }}
+        <div class="np_title">
+            {{ form.title(class_='ttl', placeholder="New form") }}
+            <input class="inputfield_s" type="text" name="" placeholder="About" value="">
+            <span>Groups {{ form.access_groups }}</span>
+        </div>
+        <div class="np_list">
+          {% for point in form.points %}
+            <div class="np_points">
+                 {{ point.title(class_='inputfield no_outln', placeholder="Point") }}
+                 <ul>
+                   {% for vote in point.votes %}
+                     <li>{{ vote.title(class_='inputfield_s', placeholder='Vote') }}</li>
+                   {% endfor %}
+                   {% for answer in point.answers %}
+                     <li>{{ answer.title(class_='inputfield_s', placeholder='Answer') }}</li>
+                   {% endfor %}
+                   <li>{{ point.add_vote(class_='li_button') }}{{ point.add_anwer(class_="li_button") }}</li>
+                  </ul>
+            </div>
+          {% endfor %}
+          {{ form.add_point(class_='isbutton') }}
+        </div>
+          <button type="submit" name="button">Create a form</button>
+        </form>
+      </div>
+    </div>
+{% endblock %}
