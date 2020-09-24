@@ -4,24 +4,34 @@
   <div class="nav_bar">
     <a href="/new_poll">Create form</a>
     <a href="/home/mypolls">My forms</a>
-    <a href="/home">All polls</a>
+    <a href="/home">All forms</a>
   </div>
   <div class="container">
-    <div class="poll_list">
-      {% for poll in polls %}
-        <div class="poll_item">
-            <a href="{{ url_for('poll_detail', id=poll.id) }}"><div class="title">{{ poll.title }}</div></a>
-            <div class="poll_body">
-              <p>About</p>
-              <div class="action_box">
-                {% if poll.author_id == current_user.id %}
-                  <a class="del_a" href="{{ url_for('poll_result', id=poll.id) }}"><p>Results</p></a>
-                  <a class="del_a" href="{{ url_for('delete_poll', id=poll.id) }}"><p>Delete</p></a>
-                {% endif %}
+    {% if message %}
+      {{ message }}
+    {% endif %}
+    {% if polls %}
+      <div class="poll_list">
+        {% for poll in polls %}
+          <div class="poll_item">
+              <a href="{{ url_for('poll_detail', id=poll.id) }}"><div class="title">{{ poll.title }}</div></a>
+              <div class="poll_body">
+                <p>About</p>
+                <div class="action_box">
+                  {% if poll.author_id == current_user.id %}
+                    <a class="del_a" href="{{ url_for('poll_result', id=poll.id) }}"><p>Results</p></a>
+                    <a class="del_a" href="{{ url_for('delete_poll', id=poll.id) }}"><p>Delete</p></a>
+                  {% endif %}
+                </div>
               </div>
-            </div>
-        </div>
-      {% endfor %}
-    </div>
+          </div>
+        {% endfor %}
+      </div>
+    {% else %}
+      <div class="is_em">
+        <span>There is no form here yet</span>
+        <a href="/new_poll">Create form</a>
+      </div>
+    {% endif %}
   </div>
 {% endblock %}

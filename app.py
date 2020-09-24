@@ -2,6 +2,7 @@ from flask import Flask, jsonify, request, render_template, redirect, url_for
 from flask_login import LoginManager, UserMixin, logout_user, login_user, login_required, current_user
 from werkzeug.security import check_password_hash, generate_password_hash
 from sqlalchemy import Table, Column, Integer, String, MetaData, ForeignKey, create_engine, ARRAY
+from sqlalchemy_utils import database_exists, create_database
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy import UniqueConstraint
 from sqlalchemy.orm.session import sessionmaker
@@ -12,14 +13,17 @@ from wtforms import SelectMultipleField, SelectField, StringField, PasswordField
 DEBUG = True
 app = Flask(__name__)
 app.config.from_object(__name__)
-app.secret_key = "I'll come up with later"
+app.secret_key = "i used to be an adventurer like you..."
 
-engine = create_engine('postgresql://postgres:admin@localhost/pstgrsdb')
+engine = create_engine('postgresql://postgres:admin@localhost/pollappdb')
+if not database_exists(engine.url):
+    create_database(engine.url)
 Base = declarative_base()
 login_manager = LoginManager(app)
 Session = sessionmaker(bind=engine)
 Session.configure(bind=engine)
 session = Session()
+
 
 class Poll(Base):
     __tablename__ = 'polls'
@@ -72,6 +76,16 @@ class User_group(Base):
 Base.metadata.create_all(engine)
 
 
+def get_user_groups():
+    if session.query(User_group).all() == None:
+        return []
+    else:
+        groups_ttl = []
+        for group in session.query(User_group).all():
+            groups_ttl.append(group.title)
+        return groups_ttl
+
+
 class Register_form(FlaskForm):
     username = StringField('username')
     password = PasswordField('password')
@@ -96,10 +110,9 @@ class PointForm(FlaskForm):
 
 class CreatePoll_form(FlaskForm):
     title = StringField('title')
-    access_groups = SelectField('Groups', choices=(group.title for group in session.query(User_group).all()))
+    access_groups = SelectField('Groups', choices=get_user_groups())
     points = FieldList(FormField(PointForm), min_entries=1)
     add_point = SubmitField(label='Add point')
-
 
 
 @login_manager.user_loader
@@ -109,13 +122,24 @@ def load_user(user_id):
 
 @app.route('/', methods=['POST', 'GET'])
 def index():
+    if current_user.is_authenticated:
+        return redirect(url_for('home'))
     form = Register_form()
     if form.validate_on_submit():
         username = form.username.data
         password = form.password.data
         password2 = form.password2.data
-        if (25 > len(username) > 4) and (password == password2):
+        if(session.query(User).filter_by(username=username).all() != []):
+            message = 'This username is already taken'
+            return render_template('index.html', form=form, message=message)
+        if (25 > len(username) > 3) and (password == password2):
             hash_pass = generate_password_hash(password)
+
+            if session.query(User_group).filter_by(title='All').first() is None:
+                new_group = User_group(title='All')
+                session.add(new_group)
+                session.commit()
+
             new_user = User(groups_id=session.query(User_group).filter_by(title='All').first().id, username=username, password=hash_pass)
             session.add(new_user)
             session.commit()
@@ -135,6 +159,8 @@ def index():
 
 @app.route('/login', methods=['POST', 'GET'])
 def login():
+    if current_user.is_authenticated:
+        return redirect(url_for('home'))
     form = Login_form()
     if form.validate_on_submit:
         username = form.username.data
@@ -144,24 +170,41 @@ def login():
             login_user(user)
             return redirect(url_for('home'))
         else:
-            message = 'Incorrect login or password'
-            return render_template('login_page.html', form=form, message=message)
+            if user is None and request.method == 'POST':
+                message = 'Incorrect login or password'
+                return render_template('login_page.html', form=form, message=message)
+            if user and check_password_hash(user.password, password) == False:
+                message = 'Incorrect login or password'
+                return render_template('login_page.html', form=form, message=message)
     return render_template('login_page.html', form=form)
 
 
 @app.route('/home')
 def home():
-    polls = session.query(Poll).order_by(-Poll.id).all()
-    return render_template('home.html', polls=polls)
+    if not current_user.is_authenticated:
+        return redirect(url_for('login'))
+    if session.query(Poll).order_by(-Poll.id).all() is None:
+        polls = None
+        return render_template('home.html', polls=polls)
+    else:
+        polls = session.query(Poll).order_by(-Poll.id).all()
+        return render_template('home.html', polls=polls)
 
 @app.route('/home/mypolls')
 def mypolls():
+    if not current_user.is_authenticated:
+        return redirect(url_for('login'))
+    if session.query(Poll).filter_by(author_id=current_user.id).order_by(-Poll.id).all() is None:
+        polls = None
+        return render_template('home.html')
     polls = session.query(Poll).filter_by(author_id=current_user.id).order_by(-Poll.id).all()
     return render_template('home.html', polls=polls)
 
 
 @app.route('/poll/<int:id>', methods=['POST','GET'])
 def poll_detail(id):
+    if not current_user.is_authenticated:
+        return redirect(url_for('login'))
     if request.method == 'GET':
         poll = session.query(Poll).filter_by(id=id).first()
         print(poll.voted)
@@ -174,26 +217,44 @@ def poll_detail(id):
         poll.voted.append(current_user.id)
         session.commit()
         for point in poll.points:
-            for vote in point.votes:
-                if vote.title == request.form[point.title]:
-                    vote.vote_count += 1
+            if len(point.votes) > 0:
+                for vote in point.votes:
+                    try:
+                        if vote.title == request.form[point.title]:
+                            vote.vote_count += 1
+                    except:
+                        pass
+                for answer in point.answers:
+                    try:
+                        anwer.answer = request.form[answer.title]
+                    except:
+                        pass
         session.commit()
         return redirect(url_for('poll_result', id=id))
 
 @app.route('/delete/<int:id>',methods=['GET'])
 def delete_poll(id):
-     poll_id = id
-     poll_to_delete = session.query(Poll).filter_by(id=poll_id).first()
-     if (current_user.id == poll_to_delete.author_id) and (poll_to_delete!= None):
-         session.delete(poll_to_delete)
-         session.commit()
-         return redirect(url_for('home'))
-     else:
-         return 'У вас нет доступа'
+    if not current_user.is_authenticated:
+        return redirect(url_for('login'))
+    poll_id = id
+    poll_to_delete = session.query(Poll).filter_by(id=poll_id).first()
+    if (current_user.id == poll_to_delete.author_id) and (poll_to_delete!= None):
+        session.delete(poll_to_delete)
+        session.commit()
+        return redirect(url_for('home'))
+    else:
+        return redirect(url_for('accs_error'))
+
+
+@app.route('/access_error')
+def accs_error():
+    return render_template('a_error.html', message='Access error')
 
 
 @app.route('/result/<int:id>',methods=['GET'])
 def poll_result(id):
+    if not current_user.is_authenticated:
+        return redirect(url_for('login'))
     if request.method == 'GET':
         poll = session.query(Poll).filter_by(id=id).first()
         vote_dict = {}
@@ -204,7 +265,7 @@ def poll_result(id):
             vote_dict.update( {point.id: vote_ctr} )
         return render_template('results.html', votes_dict=vote_dict, poll=poll)
     else:
-        return 'error'
+        return redirect(url_for('home'))
 
 @app.route('/logout')
 def logout():
@@ -214,6 +275,10 @@ def logout():
 
 @app.route('/new_poll', methods=['GET', 'POST'])
 def new_poll():
+    if not current_user.is_authenticated:
+        return redirect(url_for('login'))
+
+
     if request.method == 'GET':
         form = CreatePoll_form()
         return render_template('new_poll.html', form=form)

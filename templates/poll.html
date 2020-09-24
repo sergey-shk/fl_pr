@@ -21,7 +21,7 @@
                 {% endfor %}
                 {% for answer in point.answers %}
                   <span class="fs18">{{ answer.title }}. </span>
-                  <input class="inputfield no_outln" placeholder="answer" type="text" name="" value=""><br>
+                  <input class="inputfield no_outln" placeholder="answer" type="text" name="{{ answer.title }}" value=""><br>
                 {% endfor %}
               </ul>
             </div>
